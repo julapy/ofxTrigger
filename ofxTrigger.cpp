@@ -76,7 +76,20 @@ void ofxTrigger :: addTrigger( string triggerID, void* triggerValue, int trigger
         item.triggerValue   = stringValue;
     }
     
-    triggers.push_back( item );
+    //------------------------------------------------------- place item in correct order, ascending.
+    bool bAdded = false;
+    for( int i=0; i<triggers.size(); i++ )
+    {
+        if( item.triggerTime < triggers[ i ].triggerTime )
+        {
+            triggers.insert( triggers.begin() + i, item );
+            bAdded = true;
+            break;
+        }
+    }
+    
+    if( !bAdded )
+        triggers.push_back( item );
 }
 
 //////////////////////////////////////////////////////
@@ -143,8 +156,8 @@ void ofxTrigger :: removeTriggers ()
 
 void ofxTrigger :: reset ()
 {
-    triggerIndex = 0;
     triggerTime  = 0;
+    triggerIndex = 0;
 }
 
 void ofxTrigger :: setStartTimeMillis ( int time )
@@ -154,18 +167,9 @@ void ofxTrigger :: setStartTimeMillis ( int time )
 
 void ofxTrigger :: jumpToTimeMillis ( int time )
 {
-    triggerTime = time;
-    
-    int t = triggers.size();        // find trigger index.
-    for( int i=0; i<t; i++ )        // look from start.
-    {
-        const ofxTriggerItem& item = triggers[ i ];
-        if( item.triggerTime >= time )
-        {
-            triggerIndex = i;
-            break;
-        }
-    }
+    triggerStartTime -= time;
+    triggerTime       = time;
+    triggerIndex      = 0;
 }
 
 vector<ofxTriggerItem>& ofxTrigger :: triggersAtTimeInMillis ( int time )
@@ -173,30 +177,26 @@ vector<ofxTriggerItem>& ofxTrigger :: triggersAtTimeInMillis ( int time )
     time -= triggerStartTime;
     
     triggersOnFrame.clear();
-    
+
+    int i = triggerIndex;
     int t = triggers.size();
-    for( int i=0; i<t; i++ )
+    
+    for( i; i<t; i++ )
     {
-        int j = i + triggerIndex;
-        if( j > t - 1 )
-            j -= t;
+        const ofxTriggerItem& item = triggers[ i ];
         
-        const ofxTriggerItem& item = triggers[ j ];
+        if( item.triggerTime > triggerTime && item.triggerTime <= time )
+        {
+            triggersOnFrame.push_back( item );
+            triggerIndex = i + 1;
+        }
         
         if( item.triggerTime > time )       // all items forward of this item are in the future.
-        {
-            triggerTime = time;
-            return triggersOnFrame;
-        }
-        
-        if( item.triggerTime > triggerTime )
-        {
-            triggerIndex = j;
-            triggersOnFrame.push_back( item );
-        }
+            break;
     }
     
     triggerTime = time;
+
     return triggersOnFrame;
 }
 
