@@ -86,7 +86,9 @@ public :
     vector<ofxTriggerItem>&
          triggersAtTimeInMillis ( int time = ofGetElapsedTimeMillis() );
     
-    void removeTriggers ();
+    void removeAllTriggers      ();
+    void removeTriggersBetween  ( int startTime, int endTime );
+    void removeTriggerValue     ( ofxTriggerItem& trigger );
     void reset ();
     
     void save   ( string fileName = "triggers.xml" );

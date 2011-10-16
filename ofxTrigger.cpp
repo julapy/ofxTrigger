@@ -17,7 +17,7 @@ ofxTrigger :: ofxTrigger()
 
 ofxTrigger :: ~ofxTrigger()
 {
-    removeTriggers();
+    removeAllTriggers();
 }
 
 //////////////////////////////////////////////////////
@@ -126,32 +126,60 @@ void ofxTrigger :: addTriggerHook ( string triggerID, void* triggerPtr, int trig
     triggersPtr.push_back( item );
 }
 
-void ofxTrigger :: removeTriggers ()
+void ofxTrigger :: removeAllTriggers ()
 {
 	for( int i=0; i<triggers.size(); i++ )
-    {
-        int triggerType;
-        triggerType = triggers[ i ].triggerType;
-        
-        if( triggerType == TRIGGER_TYPE_INT )
-        {
-            delete (int*)triggers[ i ].triggerValue;
-        }
-        else if( triggerType == TRIGGER_TYPE_BOOL )
-        {
-            delete (bool*)triggers[ i ].triggerValue;
-        }
-        else if( triggerType == TRIGGER_TYPE_FLOAT )
-        {
-            delete (float*)triggers[ i ].triggerValue;
-        }
-        else if( triggerType == TRIGGER_TYPE_STRING )
-        {
-            delete (string*)triggers[ i ].triggerValue;
-        }
-    }
+        removeTriggerValue( triggers[ i ] );
     
     triggers.clear();
+}
+
+void ofxTrigger :: removeTriggersBetween  ( int startTime, int endTime )
+{
+    if( startTime >= endTime )
+        return;
+    
+    int i = 0;
+    int t = triggers.size();
+	for( i; i<t; i++ )
+    {
+        int time = triggers[ i ].triggerTime;
+        
+        if( time >= startTime && time <= endTime  )
+        {
+            removeTriggerValue( triggers[ i ] );
+            triggers.erase( triggers.begin() + i );
+            
+            --i;
+            --t;
+        }
+        
+        if( time > endTime )       // all items forward of this item are in the future.
+            break;
+    }
+}
+
+void ofxTrigger :: removeTriggerValue ( ofxTriggerItem& trigger )
+{
+    int triggerType;
+    triggerType = trigger.triggerType;
+    
+    if( triggerType == TRIGGER_TYPE_INT )
+    {
+        delete (int*)trigger.triggerValue;
+    }
+    else if( triggerType == TRIGGER_TYPE_BOOL )
+    {
+        delete (bool*)trigger.triggerValue;
+    }
+    else if( triggerType == TRIGGER_TYPE_FLOAT )
+    {
+        delete (float*)trigger.triggerValue;
+    }
+    else if( triggerType == TRIGGER_TYPE_STRING )
+    {
+        delete (string*)trigger.triggerValue;
+    }
 }
 
 void ofxTrigger :: reset ()
@@ -167,6 +195,8 @@ void ofxTrigger :: setStartTimeMillis ( int time )
 
 void ofxTrigger :: jumpToTimeMillis ( int time )
 {
+    setStartTimeMillis();
+    
     triggerStartTime -= time;
     triggerTime       = time;
     triggerIndex      = 0;
@@ -243,7 +273,7 @@ void ofxTrigger :: save ( string fileName )
 
 void ofxTrigger :: load ( string fileName )
 {
-    removeTriggers();
+    removeAllTriggers();
 
     ofxXmlSettings xml;
     xml.loadFile( fileName );
